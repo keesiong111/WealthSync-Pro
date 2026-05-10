@@ -10,11 +10,23 @@ interface Props {
 }
 
 export default function DashboardView({ financialData, healthData }: Props) {
-  const totalExpenses = Object.values(financialData.expenses).reduce((a, b) => a + b, 0);
+  const totalExpenses = Object.values(financialData.expenses || {}).reduce((a, b) => a + b, 0);
   const monthlySavings = financialData.monthlySalary - totalExpenses;
-  const savingsRateActual = (monthlySavings / financialData.monthlySalary) * 100;
+  const savingsRateActual = financialData.monthlySalary > 0 ? (monthlySavings / financialData.monthlySalary) * 100 : 0;
   
-  const expenseData = Object.entries(financialData.expenses).map(([name, value]) => ({ name, value }));
+  const totalInvestments = (financialData.investments || []).reduce((sum, inv) => sum + inv.amount, 0);
+  const safeHeight = Math.max(1, healthData.height);
+  const bmi = (healthData.weight / (safeHeight / 100) ** 2).toFixed(1);
+  const bmiNum = parseFloat(bmi);
+  const healthPurity = isNaN(bmiNum) || !isFinite(bmiNum) ? 0 : Math.min(100, Math.max(0, 100 - Math.abs(bmiNum - 22) * 5)); // Higher purity closer to ideal BMI
+
+  // Simple years to FI calculation: Target = 25x Annual Expenses
+  const annualExpenses = totalExpenses * 12;
+  const targetNetWorth = annualExpenses * 25;
+  const remainingGap = targetNetWorth - totalInvestments;
+  const yearsToFI = monthlySavings > 0 ? (remainingGap / (monthlySavings * 12)).toFixed(1) : "INF";
+
+  const expenseData = Object.entries(financialData.expenses || {}).map(([name, value]) => ({ name, value }));
   const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
 
   return (
@@ -50,7 +62,7 @@ export default function DashboardView({ financialData, healthData }: Props) {
             </div>
             <div className="p-4 bg-zinc-800/30 rounded-[1.5rem] border border-zinc-800">
               <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Health Purity</p>
-              <p className="text-xl font-mono text-blue-400 font-bold">84%</p>
+              <p className="text-xl font-mono text-blue-400 font-bold">{Math.round(healthPurity)}%</p>
             </div>
           </div>
 
@@ -103,7 +115,7 @@ export default function DashboardView({ financialData, healthData }: Props) {
       <div className="md:col-span-4 flex flex-col gap-4">
         <Card className="bg-[#141417] border-[#26262B] rounded-[2rem] shadow-xl overflow-hidden flex-grow">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black text-zinc-550 uppercase tracking-widest flex items-center gap-2">
+            <CardTitle className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
               <Activity className="w-3 h-3 text-emerald-500" /> Biometric Pulse
             </CardTitle>
           </CardHeader>
@@ -142,7 +154,7 @@ export default function DashboardView({ financialData, healthData }: Props) {
           </CardHeader>
           <CardContent className="pt-6">
             <div className="text-center py-4">
-              <p className="text-4xl font-black mb-1 italic tracking-tighter">10.4 YR</p>
+              <p className="text-4xl font-black mb-1 italic tracking-tighter">{yearsToFI} YR</p>
               <p className="text-[10px] font-bold uppercase opacity-80">To Total Independence (Age 40)</p>
             </div>
             <div className="bg-black/10 rounded-xl p-4 text-[10px] leading-relaxed font-medium mb-4 backdrop-blur-sm">

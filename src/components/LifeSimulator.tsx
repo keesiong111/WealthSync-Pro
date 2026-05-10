@@ -1,34 +1,52 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FinancialData } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { MapPin, Plane, Timer, Milestone, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 interface Props {
   financialData: FinancialData;
 }
 
 export default function LifeSimulator({ financialData }: Props) {
-  // Mock data for wealth accumulation from 30 to 45
-  const data = [
-    { age: 30, wealth: 50000, label: 'Migration to SG' },
-    { age: 32, wealth: 120000 },
-    { age: 34, wealth: 250000, label: 'Career Peak' },
-    { age: 36, wealth: 450000 },
-    { age: 38, wealth: 750000 },
-    { age: 40, wealth: 1200000, label: 'Early Retirement' },
-    { age: 42, wealth: 1500000 },
-    { age: 45, wealth: 2000000 },
-  ];
+  const [currentAge, setCurrentAge] = useState(30);
+  const [targetAge, setTargetAge] = useState(40);
+  const [targetAmount, setTargetAmount] = useState(1200000);
+
+  const totalInvestmentsOrig = financialData.investments.reduce((sum, inv) => sum + inv.amount, 0);
+  const totalExpenses = Object.values(financialData.expenses).reduce((a, b) => a + b, 0);
+  const monthlySavings = financialData.monthlySalary - totalExpenses;
+  const annualSavings = monthlySavings * 12;
+  const avgYield = financialData.investments.length > 0 
+    ? financialData.investments.reduce((sum, inv) => sum + inv.growthRate, 0) / financialData.investments.length 
+    : 7;
+
+  // Generate real projection data
+  const projectionData = [];
+  let currentWealth = totalInvestmentsOrig;
+  const yieldDecimal = avgYield / 100;
+
+  for (let age = currentAge; age <= currentAge + 20; age++) {
+    projectionData.push({
+      age,
+      wealth: Math.round(currentWealth),
+      label: age === targetAge ? 'Target Exit' : null
+    });
+    currentWealth = (currentWealth + annualSavings) * (1 + yieldDecimal);
+  }
+
+  const exitWealth = projectionData.find(d => d.age === targetAge)?.wealth || 0;
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Baseline Age', value: '30', icon: Timer, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-          { label: 'Target Exit', value: '40', icon: Milestone, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-          { label: 'Relocation', value: 'Q4 26', icon: Plane, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-          { label: 'Exit Value', value: 'S$ 1.2M', icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+          { label: 'Current Age', value: currentAge, icon: Timer, color: 'text-emerald-500', bg: 'bg-emerald-500/10', onChange: (v: number) => setCurrentAge(v) },
+          { label: 'Target Exit', value: targetAge, icon: Milestone, color: 'text-blue-500', bg: 'bg-blue-500/10', onChange: (v: number) => setTargetAge(v) },
+          { label: 'Exit Goal', value: targetAmount, icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-500/10', isCurrency: true, onChange: (v: number) => setTargetAmount(v) },
+          { label: 'Current Base', value: totalInvestmentsOrig, icon: Milestone, color: 'text-orange-500', bg: 'bg-orange-500/10', isCurrency: true },
         ].map((item, i) => (
           <Card key={i} className="bg-[#141417] border-[#26262B] rounded-2xl p-4 shadow-xl">
             <CardContent className="p-0">
@@ -36,9 +54,20 @@ export default function LifeSimulator({ financialData }: Props) {
                 <div className={`p-2 rounded-xl ${item.bg}`}>
                   <item.icon className={`w-5 h-5 ${item.color}`} />
                 </div>
-                <div>
+                <div className="flex-grow">
                   <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">{item.label}</p>
-                  <p className="text-lg font-black tracking-tighter text-white">{item.value}</p>
+                  {item.onChange ? (
+                    <Input 
+                      type="number" 
+                      value={item.value} 
+                      onChange={(e) => item.onChange?.(parseFloat(e.target.value) || 0)}
+                      className="bg-transparent border-none p-0 h-6 text-lg font-black tracking-tighter text-white focus-visible:ring-0"
+                    />
+                  ) : (
+                    <p className="text-lg font-black tracking-tighter text-white">
+                      {item.isCurrency ? `${financialData.currency === 'SGD' ? '$' : 'RM'}${item.value.toLocaleString()}` : item.value}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -52,14 +81,19 @@ export default function LifeSimulator({ financialData }: Props) {
           <CardHeader className="flex items-center justify-between border-b border-zinc-800 pb-6">
             <div>
               <CardTitle className="text-xl font-black italic tracking-tighter uppercase whitespace-nowrap">Asset Velocity Forecast</CardTitle>
-              <CardDescription className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Growth projection at 8.4% Yield</CardDescription>
+              <CardDescription className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Growth projection at {avgYield.toFixed(1)}% Compounded Yield</CardDescription>
             </div>
-            <Badge className="bg-emerald-500 text-black text-[10px] font-black italic border-none px-3">NEXUS TRACKED</Badge>
+            <div className="text-right">
+              <p className="text-[8px] text-zinc-500 font-black uppercase mb-1">Exit Net Worth</p>
+              <p className={`text-xl font-black italic ${exitWealth >= targetAmount ? 'text-emerald-500' : 'text-red-500'}`}>
+                {financialData.currency === 'SGD' ? '$' : 'RM'}{exitWealth.toLocaleString()}
+              </p>
+            </div>
           </CardHeader>
           <CardContent className="pt-8">
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data}>
+                <AreaChart data={projectionData}>
                   <defs>
                     <linearGradient id="colorWealth" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>

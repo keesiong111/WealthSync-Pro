@@ -45,7 +45,12 @@ export default function HealthHub({ data, setData }: Props) {
                    <Scale className="w-3 h-3 text-emerald-500" /> Current Mass
                 </p>
                 <div className="flex items-end gap-2">
-                  <p className="text-3xl font-black italic tracking-tighter text-white">{data.weight}</p>
+                  <Input 
+                    type="number"
+                    value={data.weight}
+                    onChange={(e) => setData({ ...data, weight: parseFloat(e.target.value) || 0 })}
+                    className="bg-transparent border-none p-0 h-8 text-3xl font-black italic tracking-tighter text-white focus-visible:ring-0 w-20"
+                  />
                   <span className="text-[10px] font-bold text-zinc-500 pb-1">KG</span>
                 </div>
               </div>
@@ -54,7 +59,12 @@ export default function HealthHub({ data, setData }: Props) {
                    <Ruler className="w-3 h-3 text-blue-500" /> Zenith Alt.
                 </p>
                 <div className="flex items-end gap-2">
-                  <p className="text-3xl font-black italic tracking-tighter text-white">{data.height}</p>
+                  <Input 
+                    type="number"
+                    value={data.height}
+                    onChange={(e) => setData({ ...data, height: parseFloat(e.target.value) || 0 })}
+                    className="bg-transparent border-none p-0 h-8 text-3xl font-black italic tracking-tighter text-white focus-visible:ring-0 w-24"
+                  />
                   <span className="text-[10px] font-bold text-zinc-500 pb-1">CM</span>
                 </div>
               </div>
@@ -80,19 +90,36 @@ export default function HealthHub({ data, setData }: Props) {
             </h3>
             <div className="space-y-4">
                {[
-                 { label: 'CALORIES', current: data.caloriesConsumed, target: 2500, color: 'bg-orange-500' },
-                 { label: 'HYDRATION', current: data.waterIntake, target: 3.5, color: 'bg-blue-500' },
+                 { label: 'CALORIES', current: data.caloriesConsumed, target: 2500, color: 'bg-orange-500', field: 'caloriesConsumed' },
+                 { label: 'HYDRATION', current: data.waterIntake, target: 3.5, color: 'bg-blue-500', field: 'waterIntake' },
                ].map((item, i) => (
                  <div key={i} className="space-y-2">
-                    <div className="flex justify-between text-[8px] font-black text-zinc-500 uppercase tracking-widest">
+                    <div className="flex justify-between text-[8px] font-black text-zinc-500 uppercase tracking-widest items-center">
                        <span>{item.label}</span>
-                       <span className="text-zinc-100 font-mono font-bold">{item.current} / {item.target}</span>
+                       <div className="flex items-center gap-1">
+                        <Input 
+                          type="number"
+                          value={item.current}
+                          onChange={(e) => setData({ ...data, [item.field]: parseFloat(e.target.value) || 0 })}
+                          className="bg-transparent border-none p-0 h-4 w-10 text-right text-zinc-100 font-mono font-bold focus-visible:ring-0 text-[10px]"
+                        />
+                        <span className="text-zinc-500">/ {item.target}</span>
+                       </div>
                     </div>
                     <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                       <div className={`h-full ${item.color} transition-all`} style={{ width: `${(item.current / item.target) * 100}%` }} />
+                       <div className={`h-full ${item.color} transition-all`} style={{ width: `${Math.min(100, (item.current / item.target) * 100)}%` }} />
                     </div>
                  </div>
                ))}
+               <div className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-800">
+                  <p className="text-[8px] text-zinc-500 uppercase font-black mb-1">Daily Step Goal</p>
+                  <Input 
+                    type="number"
+                    value={data.dailySteps}
+                    onChange={(e) => setData({ ...data, dailySteps: parseFloat(e.target.value) || 0 })}
+                    className="bg-transparent border-none p-0 h-6 text-xl font-black italic tracking-tighter text-emerald-500 focus-visible:ring-0"
+                  />
+               </div>
             </div>
             
             <div className="grid grid-cols-1 gap-3 mt-8">

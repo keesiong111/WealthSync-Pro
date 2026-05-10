@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { BrainCircuit, Send, Sparkles, RefreshCcw, Quote, Activity, Heart, Zap, Rocket } from 'lucide-react';
 import { getFinancialAdvice } from '../services/geminiService';
 import { FinancialData, HealthData } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge';
 

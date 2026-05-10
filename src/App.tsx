@@ -9,7 +9,7 @@ import HealthHub from './components/HealthHub';
 import Integrations from './components/Integrations';
 import SmartAdvisor from './components/SmartAdvisor';
 import { FinancialData, HealthData } from './types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');

@@ -17,6 +17,27 @@ interface Props {
 export default function WealthPlanner({ data, setData }: Props) {
   const calculateEPF = () => (data.monthlySalary * data.epfRate) / 100;
   const calculateCPF = () => (data.monthlySalary * data.cpfRate) / 100;
+  const totalInvestments = data.investments.reduce((sum, inv) => sum + inv.amount, 0);
+
+  const handleInvestmentChange = (index: number, field: keyof typeof data.investments[0], val: string | number) => {
+    const newInvestments = [...data.investments];
+    newInvestments[index] = { ...newInvestments[index], [field]: val };
+    setData({ ...data, investments: newInvestments });
+  };
+
+  const addInvestment = () => {
+    setData({
+      ...data,
+      investments: [...data.investments, { name: 'NEW ASSET', amount: 0, growthRate: 5 }]
+    });
+  };
+
+  const removeInvestment = (index: number) => {
+    setData({
+      ...data,
+      investments: data.investments.filter((_, i) => i !== index)
+    });
+  };
 
   const handleExpenseChange = (cat: string, val: string) => {
     const num = parseFloat(val) || 0;
@@ -91,11 +112,16 @@ export default function WealthPlanner({ data, setData }: Props) {
                 <div className="flex items-center gap-2 mb-2 font-black text-[10px] uppercase tracking-widest text-zinc-500">
                   <PiggyBank className="w-3 h-3 text-blue-500" /> Operational Outflow
                 </div>
-                <div className="grid grid-cols-2 gap-2 h-[80px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="grid grid-cols-1 gap-2 h-[150px] overflow-y-auto pr-2 custom-scrollbar">
                   {Object.entries(data.expenses).map(([cat, val]) => (
-                    <div key={cat} className="flex justify-between items-center p-2 bg-black/20 rounded-lg">
-                      <p className="text-[10px] uppercase text-zinc-400 font-bold">{cat}</p>
-                      <p className="text-[10px] font-mono text-zinc-100 font-bold">{val}</p>
+                    <div key={cat} className="flex flex-col gap-1 p-3 bg-black/20 rounded-xl">
+                      <p className="text-[8px] uppercase text-zinc-500 font-bold">{cat}</p>
+                      <Input 
+                        value={val}
+                        type="number"
+                        onChange={(e) => handleExpenseChange(cat, e.target.value)}
+                        className="h-8 bg-transparent border-none text-[10px] font-mono text-white p-0 focus-visible:ring-0"
+                      />
                     </div>
                   ))}
                 </div>
@@ -159,32 +185,53 @@ export default function WealthPlanner({ data, setData }: Props) {
             <div className="p-6 bg-emerald-500 text-black rounded-[1.5rem] shadow-[0_10px_30px_rgba(16,185,129,0.2)]">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-[8px] font-black uppercase tracking-widest opacity-60">Composite Equity Value</span>
-                <Badge className="bg-black/10 text-black border border-black/10 text-[10px] font-bold">+4.22%</Badge>
+                <Badge className="bg-black/10 text-black border border-black/10 text-[10px] font-bold">LIVE</Badge>
               </div>
-              <p className="text-3xl font-black italic tracking-tighter">S$ 152,400.00</p>
+              <p className="text-3xl font-black italic tracking-tighter">
+                {data.currency === 'SGD' ? 'S$' : 'RM'} {totalInvestments.toLocaleString()}
+              </p>
             </div>
 
             <div className="space-y-2">
-              {[
-                { ticker: 'AAPL', name: 'Apple Inc.', val: '189.43', delta: '+1.2%', color: 'text-emerald-400' },
-                { ticker: 'MSFT', name: 'Microsoft', val: '420.55', delta: '-0.4%', color: 'text-red-400' },
-                { ticker: 'TSLA', name: 'Tesla Corp', val: '178.20', delta: '+2.1%', color: 'text-emerald-400' },
-                { ticker: 'NVDA', name: 'Nvidia GPU', val: '890.30', delta: '+5.4%', color: 'text-emerald-400' },
-              ].map((stock, i) => (
-                <div key={i} className="p-4 bg-zinc-800/30 rounded-2xl flex justify-between items-center border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-zinc-800 rounded-xl flex items-center justify-center text-xs font-black text-white group-hover:bg-emerald-500 group-hover:text-black transition-all">
-                      {stock.ticker[0]}
-                    </div>
-                    <div>
-                      <p className="text-xs font-black italic">{stock.ticker}</p>
-                      <p className="text-[8px] text-zinc-500 font-bold uppercase">{stock.name}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black font-mono tracking-tighter">${stock.val}</p>
-                    <p className={`text-[10px] font-black ${stock.color}`}>{stock.delta}</p>
-                  </div>
+              <div className="flex justify-between items-center mb-2 px-1">
+                <p className="text-[8px] font-black uppercase text-zinc-500 tracking-widest">Asset Management</p>
+                <button onClick={addInvestment} className="text-[10px] font-black text-emerald-500 hover:text-emerald-400">[+] ADD NODE</button>
+              </div>
+              {data.investments.map((inv, i) => (
+                <div key={i} className="p-4 bg-zinc-800/30 rounded-2xl border border-zinc-800 hover:border-zinc-700 transition-all group relative">
+                   <button 
+                    onClick={() => removeInvestment(i)}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 transition-opacity"
+                   >
+                     ×
+                   </button>
+                   <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <Input 
+                          value={inv.name}
+                          onChange={(e) => handleInvestmentChange(i, 'name', e.target.value)}
+                          className="bg-transparent border-none text-xs font-black italic p-0 h-auto focus-visible:ring-0 text-white w-2/3"
+                        />
+                        <div className="flex items-center gap-1">
+                          <Percent className="w-2 h-2 text-emerald-500" />
+                          <Input 
+                            type="number"
+                            value={inv.growthRate}
+                            onChange={(e) => handleInvestmentChange(i, 'growthRate', parseFloat(e.target.value) || 0)}
+                            className="bg-transparent border-none text-[10px] font-black text-emerald-400 p-0 h-auto w-8 focus-visible:ring-0 text-right"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <span className="text-[10px] font-bold text-zinc-500 mb-0.5">{data.currency}</span>
+                        <Input 
+                          type="number"
+                          value={inv.amount}
+                          onChange={(e) => handleInvestmentChange(i, 'amount', parseFloat(e.target.value) || 0)}
+                          className="bg-transparent border-none text-xl font-black font-mono p-0 h-auto focus-visible:ring-0 text-white"
+                        />
+                      </div>
+                   </div>
                 </div>
               ))}
             </div>

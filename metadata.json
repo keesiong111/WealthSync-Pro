@@ -1,0 +1,13 @@
+{
+  "name": "WealthSync Pro",
+  "description": "Unified SG-MY financial planning and health wellness platform for early retirement.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "Financial Planning",
+    "Retirement Simulation",
+    "Health Tracking",
+    "AI Insights"
+  ]
+}

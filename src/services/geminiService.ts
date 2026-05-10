@@ -1,6 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+let genAI: GoogleGenAI | null = null;
+
+function getGenAI() {
+  if (!genAI) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not set. Please add it to your environment variables.");
+    }
+    genAI = new GoogleGenAI(apiKey);
+  }
+  return genAI;
+}
 
 export async function getFinancialAdvice(data: any) {
   const model = "gemini-3-flash-preview";
@@ -13,13 +24,15 @@ export async function getFinancialAdvice(data: any) {
   Keep it professional, encouraging, and structured.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-    });
-    return response.text;
+    const ai = getGenAI();
+    const result = await ai.getGenerativeModel({ model }).generateContent(prompt);
+    const response = await result.response;
+    return response.text();
   } catch (error) {
     console.error("Gemini Error:", error);
+    if (error instanceof Error && error.message.includes("GEMINI_API_KEY")) {
+      return "Config Error: GEMINI_API_KEY is missing in environment variables.";
+    }
     return "I'm currently recalibrating my financial wisdom. Please try again in a moment.";
   }
 }
@@ -30,13 +43,15 @@ export async function getHealthTips(healthData: any) {
   Data: ${JSON.stringify(healthData)}`;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-    });
-    return response.text;
+    const ai = getGenAI();
+    const result = await ai.getGenerativeModel({ model }).generateContent(prompt);
+    const response = await result.response;
+    return response.text();
   } catch (error) {
     console.error("Gemini Error:", error);
+    if (error instanceof Error && error.message.includes("GEMINI_API_KEY")) {
+      return "Config Error: GEMINI_API_KEY is missing.";
+    }
     return "Health advice is currently buffering...";
   }
 }
